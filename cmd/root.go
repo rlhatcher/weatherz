@@ -36,6 +36,8 @@ var cfgFile string
 var supplier string
 var location string
 var apikey string
+var colour bool
+var numdays int
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -68,6 +70,8 @@ func init() {
   rootCmd.PersistentFlags().StringVarP(&supplier, "supplier", "s", "metcheck", "Weather data supplier to use")
   rootCmd.PersistentFlags().StringVarP(&location, "location", "l", "canterbury", "Location for the forecast")
   rootCmd.PersistentFlags().StringVarP(&apikey, "apikey", "a", "", "API Key")
+  rootCmd.PersistentFlags().BoolVarP(&colour, "colour", "c", false, "colour or BW icons")
+  rootCmd.PersistentFlags().IntVarP(&numdays, "numdays", "n", 3, "Number of days for report")
 
   // Cobra also supports local flags, which will only run
   // when this action is called directly.

@@ -32,6 +32,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+// The format for Metoffice dates
+const dateForm = "2006-01-02Z"
+
 // MetOfficeFeed structure for weather feed from datapoint
 type MetOfficeFeed struct {
 	Site Site `json:"SiteRep"`
@@ -139,13 +142,13 @@ func metOfficeIcon(code string) string {
 		os.Exit(2)
 	}
 
-	return icons[i]
+	if colour {
+		return "colour/" + icons[i]
+	}
+	return "bw/" + icons[i]
 }
 
-func metOffice() Summary {
-
-	// Our JSON structure returned from the API call
-	var feed MetOfficeFeed
+func metOfficeAPI(feed MetOfficeFeed) {
 
 	// Each part of the URL we need to call
 	apiURL := "http://datapoint.metoffice.gov.uk"
@@ -163,61 +166,80 @@ func metOffice() Summary {
 		json.Unmarshal(data, &feed)
 	}
 
+}
+
+func metOffice() Summary {
+	// Our JSON structure returned from the API call
+	var feed MetOfficeFeed
+
+	metOfficeAPI(feed)
+
+	// Make sure we only return 5 days forecats even if we've been asked for more
+	var reportdays int
+	if numdays < 5 {
+		reportdays = numdays
+	} else {
+		reportdays = 5
+	}
+
+	Forecasts := make([]Forecast, reportdays)
+
 	Periods := feed.Site.Data.Location.Periods
 
-	var Summary Summary
-	Summary.Forecasts = make([]Forecast, len(Periods))
-
-	for i := 0; i < len(Periods); i++ {
+	for i := 0; i < len(Periods) && i < reportdays; i++ {
+		t, _ := time.Parse(dateForm, Periods[i].Value)
 
 		Reports := Periods[i].Reports
-		Summary.Forecasts[i].Date = Periods[i].Value
-		Summary.Forecasts[i].High = Reports[0].Temperature
-		Summary.Forecasts[i].Low = Reports[0].Temperature
+		Forecasts[i].Date = t.String()
+		Forecasts[i].High = Reports[0].Temperature
+		Forecasts[i].Low = Reports[0].Temperature
+		Forecasts[i].Description = t.Weekday().String()
 
 		for j := 0; j < len(Reports); j++ {
-			Summary.Forecasts[i].High = max(Summary.Forecasts[i].High, Reports[j].Temperature)
-			Summary.Forecasts[i].Low = min(Summary.Forecasts[i].Low, Reports[j].Temperature)
-
+			Forecasts[i].High, _ = max(Forecasts[i].High, Reports[j].Temperature)
+			Forecasts[i].Low, _ = min(Forecasts[i].Low, Reports[j].Temperature)
 			if Reports[j].MinutesOfDay == "720" {
-				Summary.Forecasts[i].Icon = metOfficeIcon(Reports[j].Weather)
+				Forecasts[i].Icon = metOfficeIcon(Reports[j].Weather)
 			}
 		}
 	}
+
+	var Summary Summary
+	Summary.Forecasts = Forecasts
 
 	return Summary
 }
 
 // Return the minimum of two string values representing integers
-func min(a, b string) string {
+func min(a, b string) (string, error) {
 
 	i, err := strconv.Atoi(a)
 	if err != nil {
-		i = 0
+		return a, err
 	}
 	j, err := strconv.Atoi(b)
 	if err != nil {
-		j = 0
+		return b, err
 	}
 	if i <= j {
-		return a
+		return a, nil
 	}
-	return b
+	return b, nil
 }
 
 // Return the minimum of two string values representing integers
-func max(a, b string) string {
+func max(a, b string) (string, error) {
 
 	i, err := strconv.Atoi(a)
 	if err != nil {
-		i = 0
+		return a, err
 	}
 	j, err := strconv.Atoi(b)
 	if err != nil {
-		j = 0
+		return b, err
 	}
 	if i >= j {
-		return a
+		return a, nil
 	}
-	return b
+	return b, nil
 }

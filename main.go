@@ -24,5 +24,5 @@ package main
 import "github.com/rlhatcher/weatherz/cmd"
 
 func main() {
-  cmd.Execute()
+	cmd.Execute()
 }

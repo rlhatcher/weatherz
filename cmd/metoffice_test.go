@@ -2,31 +2,31 @@ package cmd
 
 import "testing"
 
-func TestMax(t *testing.T) {
+func TestStrMax(t *testing.T) {
 	var val string
 	var err error
 
-	val, err = max("2", "6")
+	val, err = strmax("2", "6")
 	if val != "6" {
 		t.Errorf("Max was incorrect, got: %s, want: %s.", val, "6")
 	}
 
-	val, err = max("", "7")
+	val, err = strmax("", "7")
 	if err == nil {
 		t.Errorf("Max was incorrect, got: %s, want: %s.", val, err)
 	}
 }
 
-func TestMin(t *testing.T) {
+func TestStrMin(t *testing.T) {
 	var val string
 	var err error
 
-	val, err = min("2", "6")
+	val, err = strmin("2", "6")
 	if val != "2" {
 		t.Errorf("Min was incorrect, got: %s, want: %s.", val, "2")
 	}
 
-	val, err = min("", "7")
+	val, err = strmin("", "7")
 	if err == nil {
 		t.Errorf("Min was incorrect, got: %s, want: %s.", val, err)
 	}

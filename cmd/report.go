@@ -62,7 +62,6 @@ Ideal for a handout.
 			return
 		}
 		tmpl.Execute(f, forecast)
-		fmt.Println(forecast)
 	},
 }
 

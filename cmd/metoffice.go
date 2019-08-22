@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 )
@@ -99,7 +99,7 @@ type Report struct {
 	MinutesOfDay  string `json:"$"`
 }
 
-func metOfficeIcon(code string) string {
+func metOfficeIcon(code string) (string, error) {
 
 	icons := map[int]string{
 		0:  "wsymbol_0008_clear_sky_night",
@@ -137,18 +137,22 @@ func metOfficeIcon(code string) string {
 
 	i, err := strconv.Atoi(code)
 	if err != nil {
-		// handle error
-		fmt.Println(err)
-		os.Exit(2)
+		return code, err
+	}
+
+	if i < 0 || i > len(icons) {
+		return code, errors.New("code out of range")
 	}
 
 	if colour {
-		return "colour/" + icons[i]
+		return "colour/" + icons[i], nil
 	}
-	return "bw/" + icons[i]
+	return "bw/" + icons[i], nil
 }
 
-func metOfficeAPI(feed MetOfficeFeed) {
+func metOffice() Summary {
+	// Our JSON structure returned from the API call
+	var feed MetOfficeFeed
 
 	// Each part of the URL we need to call
 	apiURL := "http://datapoint.metoffice.gov.uk"
@@ -162,17 +166,8 @@ func metOfficeAPI(feed MetOfficeFeed) {
 		fmt.Printf("The HTTP request failed with error %s\n", err)
 	} else {
 		data, _ := ioutil.ReadAll(response.Body)
-		fmt.Println(string(data))
 		json.Unmarshal(data, &feed)
 	}
-
-}
-
-func metOffice() Summary {
-	// Our JSON structure returned from the API call
-	var feed MetOfficeFeed
-
-	metOfficeAPI(feed)
 
 	// Make sure we only return 5 days forecats even if we've been asked for more
 	var reportdays int
@@ -187,6 +182,7 @@ func metOffice() Summary {
 	Periods := feed.Site.Data.Location.Periods
 
 	for i := 0; i < len(Periods) && i < reportdays; i++ {
+
 		t, _ := time.Parse(dateForm, Periods[i].Value)
 
 		Reports := Periods[i].Reports
@@ -196,10 +192,10 @@ func metOffice() Summary {
 		Forecasts[i].Description = t.Weekday().String()
 
 		for j := 0; j < len(Reports); j++ {
-			Forecasts[i].High, _ = max(Forecasts[i].High, Reports[j].Temperature)
-			Forecasts[i].Low, _ = min(Forecasts[i].Low, Reports[j].Temperature)
+			Forecasts[i].High, _ = strmax(Forecasts[i].High, Reports[j].Temperature)
+			Forecasts[i].Low, _ = strmin(Forecasts[i].Low, Reports[j].Temperature)
 			if Reports[j].MinutesOfDay == "720" {
-				Forecasts[i].Icon = metOfficeIcon(Reports[j].Weather)
+				Forecasts[i].Icon, _ = metOfficeIcon(Reports[j].Weather)
 			}
 		}
 	}
@@ -211,7 +207,7 @@ func metOffice() Summary {
 }
 
 // Return the minimum of two string values representing integers
-func min(a, b string) (string, error) {
+func strmin(a, b string) (string, error) {
 
 	i, err := strconv.Atoi(a)
 	if err != nil {
@@ -228,7 +224,7 @@ func min(a, b string) (string, error) {
 }
 
 // Return the minimum of two string values representing integers
-func max(a, b string) (string, error) {
+func strmax(a, b string) (string, error) {
 
 	i, err := strconv.Atoi(a)
 	if err != nil {

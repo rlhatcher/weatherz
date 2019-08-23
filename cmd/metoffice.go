@@ -198,6 +198,10 @@ func metOffice() Summary {
 				Forecasts[i].Icon, _ = metOfficeIcon(Reports[j].Weather)
 			}
 		}
+		// If we check after mid-day, use the latest icon
+		if Forecasts[i].Icon == "" {
+			Forecasts[i].Icon, _ = metOfficeIcon(Reports[len(Reports)-1].Weather)
+		}
 	}
 
 	var Summary Summary
